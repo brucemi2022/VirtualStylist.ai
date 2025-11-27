@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { OutfitResult } from '../types';
-import { X, Sparkles, Download, ArrowRight } from 'lucide-react';
+import { X, Sparkles, Download, ArrowRight, Palette } from 'lucide-react';
 import { editOutfitImage } from '../services/geminiService';
 import { LoadingSpinner } from './LoadingSpinner';
 
@@ -9,6 +9,15 @@ interface EditModalProps {
   onClose: () => void;
   onUpdate: (updatedOutfit: OutfitResult) => void;
 }
+
+const COLOR_THEMES = [
+  { label: 'Warm', value: 'warm tones (red, orange, yellow)', class: 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100' },
+  { label: 'Cool', value: 'cool tones (blue, green, purple)', class: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' },
+  { label: 'Monochrome', value: 'monochromatic black and white', class: 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100' },
+  { label: 'Earthy', value: 'earth tones (brown, beige, olive)', class: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' },
+  { label: 'Pastel', value: 'soft pastel colors', class: 'bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100' },
+  { label: 'Vibrant', value: 'vibrant, bold colors', class: 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100' },
+];
 
 export const EditModal: React.FC<EditModalProps> = ({ outfit, onClose, onUpdate }) => {
   const [image, setImage] = useState<string | null>(outfit.imageUrl);
@@ -34,8 +43,9 @@ export const EditModal: React.FC<EditModalProps> = ({ outfit, onClose, onUpdate 
       // We don't necessarily update the parent immediately unless we want to "save" it there.
       // For this flow, let's update local state to allow iterative edits.
       onUpdate({ ...outfit, imageUrl: newImage });
-    } catch (err) {
-      setError("Failed to edit image. Please try again.");
+    } catch (err: any) {
+      // Display the actual error message from the service (which might be the model's refusal reason)
+      setError(err.message || "Failed to edit image. Please try again.");
     } finally {
       setIsProcessing(false);
       setPrompt(''); // Clear prompt after success
@@ -103,6 +113,25 @@ export const EditModal: React.FC<EditModalProps> = ({ outfit, onClose, onUpdate 
                 Ask the AI to adjust colors, add accessories, or apply filters.
               </p>
               
+              {/* Color Palette Section */}
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Palette className="w-3 h-3 text-gray-400" />
+                  <span className="text-xs font-medium text-gray-600">Quick Color Themes</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {COLOR_THEMES.map((theme) => (
+                    <button
+                      key={theme.label}
+                      onClick={() => setPrompt(`Change the color palette to ${theme.value}`)}
+                      className={`px-3 py-1.5 text-xs font-medium border rounded-full transition-all hover:scale-105 ${theme.class}`}
+                    >
+                      {theme.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="space-y-3">
                 <textarea
                   value={prompt}
@@ -119,7 +148,9 @@ export const EditModal: React.FC<EditModalProps> = ({ outfit, onClose, onUpdate 
                 </button>
               </div>
               {error && (
-                <p className="mt-2 text-xs text-red-500">{error}</p>
+                <div className="mt-2 p-2 bg-red-50 border border-red-100 rounded text-xs text-red-600">
+                  {error}
+                </div>
               )}
             </div>
 

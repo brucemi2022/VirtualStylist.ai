@@ -61,6 +61,12 @@ export const generateOutfitForStyle = async (
       }
     }
 
+    // Check if the model returned text explaining why it couldn't generate an image
+    const textPart = response.candidates?.[0]?.content?.parts?.find(p => p.text);
+    if (textPart?.text) {
+      throw new Error(textPart.text);
+    }
+
     throw new Error("No image generated.");
   } catch (error) {
     console.error(`Error generating ${style} outfit:`, error);
@@ -77,9 +83,9 @@ export const editOutfitImage = async (
     const mimeType = extractMimeType(currentImage);
 
     const prompt = `
-      Edit this fashion image based on the following instruction: "${editInstruction}".
-      Maintain the flat-lay style and the high quality.
-      Keep the composition mostly consistent unless the instruction implies changing it.
+      Edit the attached fashion image based on this instruction: "${editInstruction}".
+      Return ONLY the edited image. Do not explain what you did.
+      Maintain the flat-lay style, lighting, and high quality.
     `;
 
     const response = await ai.models.generateContent({
@@ -103,6 +109,12 @@ export const editOutfitImage = async (
       if (part.inlineData) {
         return `data:image/png;base64,${part.inlineData.data}`;
       }
+    }
+
+    // Check if the model returned text explaining why it couldn't generate an image (e.g. safety refusal)
+    const textPart = response.candidates?.[0]?.content?.parts?.find(p => p.text);
+    if (textPart?.text) {
+      throw new Error(textPart.text);
     }
 
     throw new Error("No edited image generated.");
